@@ -2,7 +2,7 @@ name: Centralized Auto-Merge JSON Changes
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Runs every 15 minutes
+    - cron: '*/5 * * * *'  # Runs every 15 minutes; adjust as needed
   workflow_dispatch:  # Allows manual triggering
 
 permissions:
@@ -17,36 +17,39 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all branches
+          fetch-depth: 0  # Ensures all branches are fetched
 
       - name: Set Up Git User
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-      - name: Identify and Merge JSON Changes from Source Branches
+      - name: Identify JSON Changes from All Branches
         run: |
           TARGET_BRANCH="master"
-          SOURCE_BRANCHES=("test", "test2")  # Add more branches if needed
-          
+          SOURCE_BRANCHES=("test" "test2")
+
+          # Ensure we're on the target branch first
           git checkout $TARGET_BRANCH
-          git pull origin $TARGET_BRANCH  # Ensure it's up-to-date
 
           for BRANCH in "${SOURCE_BRANCHES[@]}"; do
             echo "Checking $BRANCH for JSON changes..."
-            
-            git fetch origin $BRANCH
-            git checkout $BRANCH
-            
-            # Check if there are JSON file changes compared to branch1
-            JSON_CHANGED=$(git diff --name-only origin/$TARGET_BRANCH...$BRANCH | grep -E '\.json$' || true)
-            
-            if [[ ! -z "$JSON_CHANGED" ]]; then
-              echo "Merging $BRANCH into $TARGET_BRANCH..."
-              git checkout $TARGET_BRANCH
-              git merge --no-edit $BRANCH || { echo "Merge conflict detected in $BRANCH. Skipping."; continue; }
-              git push origin $TARGET_BRANCH
+            if git ls-remote --exit-code --heads origin $BRANCH; then
+              # Fetch and check out the source branch
+              git fetch origin $BRANCH
+              git checkout $BRANCH
+
+              # Check for JSON file differences between source and target branch
+              JSON_CHANGED=$(git diff --name-only origin/$TARGET_BRANCH | grep -E '\.json$' || true)
+              if [[ ! -z "$JSON_CHANGED" ]]; then
+                echo "Merging $BRANCH into $TARGET_BRANCH..."
+                git checkout $TARGET_BRANCH
+                git merge --no-edit $BRANCH || echo "Merge conflict in $BRANCH, skipping."
+                git push origin $TARGET_BRANCH
+              else
+                echo "No JSON changes in $BRANCH."
+              fi
             else
-              echo "No JSON changes in $BRANCH."
+              echo "Branch $BRANCH does not exist. Skipping..."
             fi
           done
