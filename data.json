@@ -1,0 +1,7 @@
+{
+  "name": "Example",
+  "version": "1.0",
+  "description": "Sample JSON file for testing GitHub Action",
+  "active": true,
+  "items": [1, 2, 3, 4,5,6]
+}
