@@ -1,7 +1,8 @@
 {
   "name": "Example",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "Sample JSON file for testing GitHub Action",
-  "active": true,
-  "sankeerth": [ 7, 8, 9]
+  "test": "for baby"
+  "active": false,
+  "shiva": [ 7, 8, 9]
 }
